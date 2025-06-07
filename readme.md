@@ -296,11 +296,11 @@ let mut x = x + 6;
     - They both pattern match and use OO `.` with 0-indexed int literals.
     - `()` is legal and called `unit` - no comma!
 - Arrays are arrays.
+    - Rust has run-time buffer overflow blockers.
     - That prefix on the type specifies an initial value and dodge typing I think. 
 ```{.rs}
 let mut secret = [0u8, 1];
 ```
-    - Rust has run-time buffer overflow blockers.
 
 ### 03: Functions
 
@@ -319,5 +319,115 @@ let mut secret = [0u8, 1];
 
 ### 05: Control Flow
 
+#### Cond
 
+- If is trivially `else if` with no `elif` on `{}` blocks.
+    - They are legal in statements!
+```{.rs}
+let x = if true {1} else {0};
+```
+    - They must pass a type check.
 
+#### Loop
+
+- Named `loop`s are `goto` but worse.
+    - `break` exits
+    - `continue` restarts
+    - Can return a value (????) via `break` (???????)
+- This should work but doesn't:
+```rs
+fn main() {
+    let mut i = 0;
+
+    let r = loop {
+        i += 1;
+
+        if i == 10 {
+            i * 2
+        }
+    };
+
+    println!("{r}");
+}
+```
+- With loops in hand I improved `guessing_game`
+```rs
+fn main() {
+
+    /* This will brick Windows, which is a feature */
+    let mut devrnd = std::fs::File::open("/dev/urandom").expect("Oop!");
+    let mut buffer = [0u8, 1];
+    std::io::Read::read_exact(&mut devrnd, &mut buffer).expect("CHONK");
+    let secret = buffer[0];
+    let mut guess = !secret;
+
+    while guess != secret {
+
+        /* Blows up if I declare this outside */
+        let mut io = String::new();
+        
+        /* Continue less a print is Hmmge */
+        std::io::stdin().read_line(&mut io).expect("Rip");
+        guess = match io.trim().parse() {
+            Ok(num) => num,
+            Err(_) => continue,
+        };
+
+        if guess < secret {
+            println!("<");
+        } else {
+            /* Cooler to print then girlypop than ifx2 */
+            println!(">");
+        }
+    }
+    println!("girlypop");
+}
+```
+- I think I intend to avoid shadowing and `loop`.
+    - Definitely want to be cautious about scoping+shadowing.
+- Has `for each` but I don't really know about collections yet so we'll get to that latter.
+- I believe this is Rust claim `loop` use un-Rustic and unsafe:
+> The safety and conciseness of `for` loops make them the most commonly used loop construct in Rust. 
+- I agree!
+- There's ranges as well.
+
+## ch04
+
+### 01: Ownership
+
+- Ownership - the first Rust topic.
+    - They avoid call heap pointers keys.
+    - They argue from safety moreso than performance.
+- Scoping is tied to ownership maybe.
+    - Oh it is literally only scope.
+    - De facto exit routines, I need to find the real vocab word.
+- Single equals assignment performs a move, which is an atomic shallow copy + invalidation.
+    - This means the compiler knows about variable names.
+- This is suss.
+```rs
+let s = String::from("yolo")
+let t = s;
+println!("{s}"); // Rip
+let x = 1;
+let y = 1;
+println!("{x}"); // Legal
+```
+- Seems like memory-safe stack allocation management is strictly harder, e.g. `4096_t` completion achieves the Rust LOs.
+
+### 02
+
+- References appear to be pointers-but-not-name.
+    - These things appear to be fairly blaise objects under the hood.
+    - Has to be some infrastructure around reference counting.
+- Ownership is a metaphor and not a technology.
+    - This is just performant-ish garbage collection.
+- I can't figure out how Rust is ever faster than C.
+- Ownership enforces access control, so actually we have objects with security policies.
+- Ownership is fused pointer/mutex I guess.
+
+### 03
+
+- Slices are index ranges attached to an object that freeze the object.
+- APIs allow mixed slice/object inputs via slice declaration, called "deref coercisons".
+
+## ch05 Structs
