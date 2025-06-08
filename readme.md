@@ -391,7 +391,7 @@ fn main() {
 - I agree!
 - There's ranges as well.
 
-## ch04
+## ch04 Ownership
 
 ### 01: Ownership
 
@@ -414,7 +414,7 @@ println!("{x}"); // Legal
 ```
 - Seems like memory-safe stack allocation management is strictly harder, e.g. `4096_t` completion achieves the Rust LOs.
 
-### 02
+### 02 References
 
 - References appear to be pointers-but-not-name.
     - These things appear to be fairly blaise objects under the hood.
@@ -425,9 +425,129 @@ println!("{x}"); // Legal
 - Ownership enforces access control, so actually we have objects with security policies.
 - Ownership is fused pointer/mutex I guess.
 
-### 03
+### 03 Slices
 
 - Slices are index ranges attached to an object that freeze the object.
-- APIs allow mixed slice/object inputs via slice declaration, called "deref coercisons".
+- APIs allow mixed slice/object inputs via slice declaration, called "deref coercisions".
 
 ## ch05 Structs
+
+### 01 Structs
+
+- Fixed width named fields.
+- You can declare with field values I guess.
+```r
+struct Pnt {
+    x: u64,
+    y: u64,
+}
+
+fn main() {
+    let p = Pnt {
+        x: 0,
+        y: 1,
+    };
+    println!("Hello, world! ({0},{1})", p.x, p.y);
+}
+```
+- Fields aren't ordered.
+- Mutablility is struct level.
+- $\exists$ "field init shorthard" which is... suspicious.
+    - See also: Struct Update Syntax which is a destructive update/rename.
+    - Ah, but only in the case that there's heap copies.
+- $\exists$ tuple structs.
+    - Names matter for typing and deconstructing.
+    - Otherwise same as tuples.
+```rs
+struct Pnt(u64, u64);
+```
+- $\exists$ unit structs which basically have just a name.
+    - That has to be great for runtime performance.
+- There will be a future a future way to put things in structs owned by someone else via lifetimes.
+
+### 02 Example
+
+- You can autogenerate printers with the `#[derive(Debug)]` preprocessor (???) directive. and `:?` specifier in format blocks.
+- `dbg!` macro seems great, I think I'll use that a lot.
+
+### 03 Methods
+
+- NOOOOOOOO!
+- They're pipes?
+- Wait is that good.
+- They're good.
+- Credit Jimmy and/or [this](https://rust-lang.github.io/rfcs/0445-extension-trait-conventions.html)
+    - The `cargo` message here was pretty vague and documentation seems rough, but I like the language feature quite a bit.
+```rs
+trait PrintHam {
+    fn printham(&self);
+}
+
+impl PrintHam for u64 {
+    fn printham(&self) {
+        let mut sum:u64 = 0;
+        for i in 0..63 {
+            sum += self >> i & 1;
+        }
+        println!("{sum}");
+    }
+}
+
+fn main() {
+    let n:u64 = 1025;
+    n.printham();
+}
+```
+- I am now method pilled (please language designers use pipes).
+    - Ideally with type specification.
+- I think I like this:
+
+> The fact that Rust makes borrowing implicit for method receivers is a big part of making ownership ergonomic in practice.
+
+- Looks like I could write `hamdist` but I don't see the benefit of doing that right now.
+    - I need to write more things with return types at some point.
+- Constructors are associated functions.
+    - Gotta decide if those are Calvin.constructors, actual.constructors, or ~constructors.
+
+## ch06 Enums
+
+### 00
+
+- Enums (woo) and **Pattern Matching** (BIG WOO !!!)
+- Options (huge woo).
+- I actually hated `match` in guessing game but bet it will be good here.
+
+### 01 Enum
+
+- I have literally never seen this written out long form before in my life.
+
+> IP addresses: version four and version six.
+
+- Oh I think an `enum` being just `4` might brick them.
+    - It did.
+```rs
+#[derive(Debug)]
+enum IP {
+    v4,
+    v6,
+}
+
+fn main() {
+    let v = IP::v4;
+    dbg!(v);
+}
+```
+- This is not Rust related by representing IP addresses as strings should be illegal.
+    - Yes, I do know everyone does it.
+    - If I have some freetime I'm going PR a change here I think to `u128`.
+- Ah, custom `struct`s inside an `enum` is Good, Actually.
+- Oh enums are also unions, that actually makes sense.
+- Options are an enum, that's good.
+
+### 02 Match
+
+- Matches `match` at least `enum`, hopefully more?
+- Yes, uber slay.
+
+
+
