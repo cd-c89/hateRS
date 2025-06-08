@@ -544,10 +544,225 @@ fn main() {
 - Oh enums are also unions, that actually makes sense.
 - Options are an enum, that's good.
 
+##### Aside
+
+- I have worked `continue` and `break` out of guessing game.
+```rs
+fn main() -> std::io::Result<()> {
+    /* This will brick Windows, which is a feature */
+    let mut devrnd = std::fs::File::open("/dev/urandom").expect("Oop!");
+    let mut buffer = [0u8, 1];
+    std::io::Read::read_exact(&mut devrnd, &mut buffer).expect("CHONK");
+    let secret = buffer[0];
+    let mut win = false;
+
+    while !win {
+        /* Blows up if I declare this outside */
+        let mut io = String::new();
+
+        /* Continue less a print is Hmmge */
+        std::io::stdin().read_line(&mut io)?;
+        win = match io.trim().parse::<u8>() {
+            Ok(n) => {
+                if n < secret {
+                    println!("<");
+                    n == secret
+                } else {
+                    println!(">");
+                    n == secret 
+                }
+            }
+            Err(_) => false,
+        }
+    }
+    println!("girlypop");
+    Ok(())
+}
+```
+- I will work to remove the options next.
+
 ### 02 Match
 
 - Matches `match` at least `enum`, hopefully more?
 - Yes, uber slay.
+- I don't seem to be able to match on expressions, so this is just switch.
 
+### 03 If Let
 
+- But does it have `let` `in`.
+- Basically, `if let` is close enough.
 
+## ch07 Package Management
+
+- Rust falsely believes I will need libraries and multiple files to implement an OS.
+- Vocab test:
+    - Packages are a cargo way to distribute crates.
+    - Crates trees of modules that can be linked.
+    - Modules set paths, which I think are namespace things.
+    - Paths are ways of naming items (so yes).
+
+### 01 Crates
+
+- Are the atomic unit.
+- Libraries lack main, and are the entry level crate categorization. 
+- Packages are are a DAG of $n\geq1$ crates.
+    - Maximum one library crate.
+- `cargo` new was (sighs) a package (cargo) making a package.
+
+### 02 Modules
+
+- Root looks like `lib.rs`/`main.rs` is a social convention but may be the compiler default.
+- Root should enumerates modules via `mod <name>` which map to `<name>.rs` or `<name>/mod.rs` - probably for multifile modules?
+- `mod` in nonroot is submodule by construction, and follows the expected pathing.
+- The `outer::middle::inner` syntax is a file path.
+- Default to private with `pub` to publish, which can be applied `mod` level.
+- `use` introduces a symbolic link.
+
+### 03 Paths
+
+- Can use absolute introduced by `crate` or relatives introduced by `self` and `super`.
+- I thought C.header and Java.interface had been well regarded and am surprised to see a fused API/implementation, which seems to be the direction here.
+    - I'm wondering if this is due to factoring occuring in the compiler backend.
+- There's a link to API Guidelines I should read someday.
+    - Especially if I make `vcd2pl`
+- This chapter appears unusually preachy about completely Rust agnostic topics, which seems odd for the stated audience (knows at least one language, by which they mean C++).
+    - Okay having written that, there was probably some C++ beef this is directly responding to.
+- On loopback, it looks like `lib.rs` is the intended header via `mod` statements.
+
+#### Structs
+
+- Public `struct`s have private fields by default.
+- Public `enums` have public variants by default.
+
+### 04 Use
+
+- `use` keyword does exactly what you'd expect.
+- Oh there is `use` `as` I had kinda assumed there wasn't.
+- Can use `pub use` to diverge the API and file structure.
+- `std` is available without config but no other packages are, otherwise manipulate `.toml`
+- Oh there's nested `use`, I really wanted that`
+```rs
+use std::{cmp::Ordering, io};
+use std::io::{self, Write};
+```
+- The capitalization regime is getting omega suss.
+- There's Glob!
+```rs
+use std::collections::*;
+```
+- I will not use this for evil.
+
+### 05 Separation
+
+- Ah there it is.
+
+> In other words, `mod` is not an “include” operation that you may have seen in other programming languages.
+
+- I question to appropriateness of burning the 7th chapter over some petty grievance.
+- My take is that if Rust did in fact solve package management, everyone would know that and it wouldn't be the subject of lengthy prose.
+    - And they definitely didn't solve package management *per examples used in this section*.
+- The chapter correctly notes:
+
+> The main downside to the style that uses files named mod.rs is that your project can end up with many files named mod.rs, which can get confusing when you have them open in your editor at the same time.
+
+- Even just skimming this guide I have 9 `src/main.rs` files in my notes.
+    - Either something is a good practice or it isn't.
+
+#### Closing thoughts
+
+- Overall a tedious and embarrassing chapter.
+- I was annoyed with `cargo` when I *had* been giving it the benefit of the doubt.
+- Fusing compilation to a filesystem will complicate self-hosting.
+    - I do wonder if `rustc` can compile an io stream.
+
+## ch08 Collections
+
+- These are the heap collections (e.g. not tuple/array).
+    - vector
+    - string
+    - hash map
+- I wonder how they dodge the Java dictionary problem.
+
+### 01
+
+- Very refreshing to see an explicit vector!
+    - I have been fighting for my LIFE defending the naming of `argv`.
+- They're typed.
+- $\exists$ `vec!`
+- Use "update" terminology to describe insert/append/extend/push.
+    - `v.push(e)`
+    - I'd reserve "update" for in place, wonder if that aged out.
+- Indices return slices and `.get` returns slice options.
+    - I'm inclined to like `get`.
+- Updates nuke slices liberally for safety (seems fine).
+- Supports `for` `in`
+- Mathematics is unsurprisingly not vectorized as far as I can tell.
+```rs
+let mut v = vec![100, 32, 57];
+for i in &mut v {
+    *i += 50;
+}
+```
+- vs.
+```py
+l = [100, 32, 57]
+for i in range(l):
+    l[i] += 50
+```
+- vs.
+```C
+int32_t buf[3] = {100, 32, 57}, i = 3;
+while (i--) {
+    buf[i] +- 50
+}
+```
+- Seems fine. Ref (` & `) and deref (` * `) felt bad, but the alternatives are worse.
+```py
+a = np.array([100,32,57]) + 50
+```
+- Using deference with a 7 chapter foreward reference in chapter 8 is really something though!
+- Polymorphic vectors via `enum`, sure why not.
+    - Sure beats `void * ` but I think we all know `void * ` is baseline for how bad something can get.
+- Vector drops drop elements.
+
+### 02 Strings
+
+- "Oh boy!" - Nobody.
+- Taxonomy:
+    - `str` (string slice) is only core language string.
+    - Literals are ELF cached slices.
+        - I say: slices *of what*.
+    - `String` is a `std` collection type is:
+        - Growable (????)
+        - Mutable
+        - Owned
+- `x.to_string()` and `String::from(x)` are redundant... by design?
+- `+` is overloaded for string. Great!
+    - It's not great.
+- $\exists$ `format!` macro (sprintf?)
+- `.push_str` is, of course, an append/concat not a push.
+    - Love!
+    - It's also a deep copy!
+- `.push` is push.
+- `+` also takes (1) irregular types and (2) irregularly impacts ownership.
+    - Implemented as a method of course.
+    - All the downsides of OO with none of the benefits!
+```rs
+let mut s1 = "hello ".to_string();
+s1 += "world";
+println!("{s1}");
+```
+- String indexing is banned.
+    - Okay.
+- The thing is that this is what I want:
+
+> if &"hi"[0] were valid code that returned the byte value, it would return 104, not h.
+
+- Also `'h' == 104`.
+- Wait they bricked string index for *performance*.
+    - Are the performance people and unicode people the same people?
+- Numerical slices are permitted in code and permitted to crash at runtime.
+- Rust recommends requesting `.chars()` or `.bytes` in iteration.
+- I think I just need to find (or write) an ASCII API.
+
+### 03 Hash Maps
