@@ -822,7 +822,7 @@ if (!fp) {
     - I kinda hate `match` in a dangling curly brace language actual.
     - I thought I was getting this.
 
-```sml
+```ml
 fun factorial 0 = 1
   | factorial n = n * factorial (n - 1)
 ```
