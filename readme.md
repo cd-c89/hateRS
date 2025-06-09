@@ -766,3 +766,175 @@ println!("{s1}");
 - I think I just need to find (or write) an ASCII API.
 
 ### 03 Hash Maps
+
+- "Get in losers; we're doing key-value storage." - Ada Lovelace
+- Curious how Big Rust avoids Ye Olde Java Dictionary Probleme
+    - Probably by implementing correctly the first time (lol).
+- Oh these will be ludicrously obnoxious to use with String keys huh.
+- They avoided Javaproblem by just not implementing it all the way haha.
+- All values have to be of the same type, but `enums` exist so that's an imaginary rule.
+- Wow I wonder why people don't use these.
+```rs
+/* When your language doesn't need pipes */
+let score = scores.get(&team_name).copied().unwrap_or(0);
+```
+- I need to look at the Polars source.
+- For is over pairs:
+```rs
+for (k,v) in &d {
+    println!("{k}:{v}");
+}
+```
+- They seem to be claiming their HashMap achieves security goals in production via a citation to Wikipedia.
+    - There's a paper they just *don't* link. [SipHash](https://web.archive.org/web/20170327151630/https://131002.net/siphash/siphash.pdf)
+- It seems like precious little key-value storage is being done after all, though the claims in this chapter suggest it may be "for real". 
+    - Need to learn more.
+
+## ch09
+
+- Error handling, which presumably is what makes (alongside memsafety) Rust OS-viable.
+- Not having exceptions is, probably, the most correct thing Rust has done, and I think probably a bigger contribution than borrow.
+
+### 01 Panic
+
+- Some errors cause automatically, or you can invoke with `panic!`
+- They print by default (whoa!) and cleanup?
+    - Oh they allow hard abort via `.toml`?
+    - Odd place to put that I think,
+> Here, we’re attempting to access the 100th element of our vector (which is at index 99 because indexing starts at zero),
+- Being cool enough to 0-index and not cool enough to base-2 magic number is rough.
+- Sounds like `cargo run` does extremely heavy debug instrumentation by default, and I can probably turn that off for now.
+    - Probably one of the drivers of compile times.
+
+### 02 Results
+
+- These are nullables built using the option system.
+- This is going to be huge after years of e.g. `man fread`
+```C
+fp = fopen("/bin/sh", "rb");
+if (!fp) {
+    perror("fopen");
+    return EXIT_FAILURE;
+}
+```
+- Looks like its mostly used in handle/panic trees.
+- `unwrap_or_else` looks cool.
+    - I kinda hate `match` in a dangling curly brace language actual.
+    - I thought I was getting this.
+
+```sml
+fun factorial 0 = 1
+  | factorial n = n * factorial (n - 1)
+```
+- Oh I think I'm basically always using `unwrap` except in an OS.
+    - So Rust is good because it enforces `if (!fp)` via the type system.
+- Rust is recommending `except` vs `unwrap` but I literally never want an error message giving me anything other than a code line number (and file name!)
+    - I don't even want that second line probably.
+- Just kidding `?` looks cooler than `.unwrap`.
+- This chapter is very obviously why the language is good I'm not sure why I heard so much nonsense about borrowing which actually appear completely mundane.
+- You can slam `?` in the middle of a not-pipe let's go.
+- `main` is in fact (somehow) restricted, but the manner in which it is restricted is a carefully guarded secret that is not disclosed in documentation (for some reason).
+
+> So far, all the `main` functions we’ve used return `()`. The `main` function is special because it’s the entry point and exit point of an executable program, and there are restrictions on what its return type can be for the program to behave as expected.
+
+- This is the "good" `main`:
+```rs
+fn main() -> Result<(), Box<dyn Error>> {
+    Ok(())
+}
+
+- The secret legal main return types are terminators (okay that's a tautology but at least a programmable one).
+
+### 03 Panic?
+
+- Panic in prototypes and in unreachable states.
+- Easy.
+- Also security cases.
+- I guess what makes this a Rust chapter is Rust not having exceptions?
+    - There a no non-C design decisions discussed in 03.
+- wait WHAT
+> Recall the guessing game in Chapter 2 in which our code asked the user to guess a number between 1 and 100
+- I do *not* recall that and I *do* recall altering the code to a `u8` to *impose* a 100 limit, so why was a `u8` not recommended.
+    - Separately, I would've used an `i8` so I could test diffs vs. `0`.
+- Okay now they're using `i32`s still what is going on.
+    - If bits cost money you must `i8`.
+    - If they don't you must `x64`
+- The Base 10 privileging is getting weird.
+- This is such a good language feature to use so poorly.
+    - I don't understand factoring bounds checking into a struct and a not a func.
+    - Funcs return results, structs don't.
+    - OO poisoning, I think.
+
+## ch10 Generic/Trait/Lifetime
+
+- It has been too long since last I faced a doom-driven hero of the dragon blood.
+
+### 01 Generic
+
+- Okay we're implementing polymorphic vecmax.
+- I wonder what the best language framework is for automated factoring, actually.
+- Okay so instead of a writing a function on a type you can write a function on a trait.
+    - Traits are... sets of types?
+    - Odd to describe then as attributes of types (to me).
+    - OO poisoning?
+- Can have generic structs, cool.
+    - Wondering if you can implement C-math somehow.
+    - Not that you should!
+- Works on methods, which means I need to see if $\exists$ `sizeof`.
+
+### 02 Traits
+
+- Here's a claim:
+
+> Note: Traits are similar to a feature often called interfaces in other languages, although with some differences.
+
+- Oh I learned these already to method a builtin.
+- P2P Social Media in Rust would go crazy.
+    - Short post
+    - Long post
+    - Img post
+    - Slideshow
+    - Video post
+    - Audio post
+    - Emoji post
+    - Enum posts of some type
+    - Good user
+    - Chrome user
+    - iOS user
+    - Cartesian product
+- Oh this is also non-evil but limited inheritance, neat.
+- Okay so I have no idea why `quarto` isn't written in Rust now, and I didn't before, but now I *really* don't know.
+    - It may be in Haskell?
+        - Oh it was in typescript LOL
+    - `mdbook` needs `reveal`.
+- `where` is good
+```rs
+fn some_function<T, U>(t: &T, u: &U) -> i32
+where
+    T: Display + Clone,
+    U: Clone + Debug,
+{
+```
+- That is very standard ml of new jersey
+- Oh and this means the return type of `main` is `impl terminate` (sp?)
+- Blankets are good, this is my least favorite thing:
+```py
+class Box:
+    
+    def __init__(self, x):
+        self.x = x
+
+    def __str__(self):
+        return "I'm a box"
+
+    def __repr__(self):
+        return self.__str__()
+```
+
+### 03 Lifetimes
+
+- Rust falsely claims this will be a concept I'm not familiar with.
+    - And then motivates with dangling pointer!
+    - Pass a pointer into your stack frame! This is trivial!
+- I think I need to see how close MISRA C and MISRA C++ are to Rust *once compiled*.
+    - Oh apparently there's no actually existing MISRA C lol.
