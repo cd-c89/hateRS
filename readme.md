@@ -842,6 +842,7 @@ fun factorial 0 = 1
 fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
+```
 
 - The secret legal main return types are terminators (okay that's a tautology but at least a programmable one).
 
